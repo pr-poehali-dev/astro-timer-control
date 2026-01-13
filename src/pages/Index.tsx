@@ -24,11 +24,13 @@ const Index = () => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const intervalRef = useRef<number | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     if (isRunning) {
+      startTimeRef.current = Date.now() - time;
       intervalRef.current = window.setInterval(() => {
-        setTime((prev) => prev + 1);
+        setTime(Date.now() - startTimeRef.current);
       }, 1);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
