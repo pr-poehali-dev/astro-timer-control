@@ -21,7 +21,9 @@ const Index = () => {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [currentNote, setCurrentNote] = useState("");
   const [calibrationOffset, setCalibrationOffset] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
   const intervalRef = useRef<number | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     if (isRunning) {
@@ -56,6 +58,30 @@ const Index = () => {
     setTime(0);
   };
 
+  const playBeep = () => {
+    if (!soundEnabled) return;
+    
+    if (!audioContextRef.current) {
+      audioContextRef.current = new AudioContext();
+    }
+    
+    const ctx = audioContextRef.current;
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+    
+    oscillator.frequency.value = 1200;
+    oscillator.type = "sine";
+    
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.1);
+  };
+
   const handleMark = () => {
     const newMeasurement: Measurement = {
       id: Date.now().toString(),
@@ -65,6 +91,36 @@ const Index = () => {
     };
     setMeasurements([newMeasurement, ...measurements]);
     setCurrentNote("");
+    playBeep();
+  };
+
+  const exportToCSV = () => {
+    if (measurements.length === 0) return;
+    
+    const headers = ["Время отметки", "Длительность", "Заметка", "Дата и время"];
+    const rows = measurements.map(m => [
+      formatTime(m.duration),
+      m.duration.toString(),
+      `"${m.note.replace(/"/g, '""')}"`,
+      new Date(m.timestamp).toLocaleString("ru-RU")
+    ]);
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.join(","))
+    ].join("\n");
+    
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `chronometer_${Date.now()}.csv`);
+    link.style.visibility = "hidden";
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const getAverageTime = () => {
@@ -221,10 +277,21 @@ const Index = () => {
 
               <TabsContent value="history" className="space-y-4">
                 <Card className="p-6 border-primary/20">
-                  <h3 className="text-xl font-['Merriweather'] font-bold mb-4 flex items-center">
-                    <Icon name="List" size={20} className="mr-2" />
-                    Журнал измерений
-                  </h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-['Merriweather'] font-bold flex items-center">
+                      <Icon name="List" size={20} className="mr-2" />
+                      Журнал измерений
+                    </h3>
+                    <Button
+                      onClick={exportToCSV}
+                      disabled={measurements.length === 0}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Icon name="Download" size={16} className="mr-2" />
+                      Экспорт CSV
+                    </Button>
+                  </div>
                   {measurements.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
                       <Icon
@@ -372,6 +439,25 @@ const Index = () => {
                           10 мс
                         </div>
                       </div>
+                    </div>
+
+                    <div className="p-6 bg-secondary/30 rounded-lg border border-primary/10">
+                      <div className="flex items-center justify-between mb-3">
+                        <Label className="text-sm">Звуковые сигналы</Label>
+                        <button
+                          onClick={() => setSoundEnabled(!soundEnabled)}
+                          className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          style={{ backgroundColor: soundEnabled ? 'hsl(var(--primary))' : 'hsl(var(--secondary))' }}
+                        >
+                          <span
+                            className="inline-block h-4 w-4 transform rounded-full bg-background transition-transform"
+                            style={{ transform: soundEnabled ? 'translateX(1.5rem)' : 'translateX(0.25rem)' }}
+                          />
+                        </button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {soundEnabled ? "Звуковой сигнал при отметке включен" : "Звуковой сигнал отключен"}
+                      </p>
                     </div>
 
                     <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
