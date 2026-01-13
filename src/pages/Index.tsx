@@ -28,8 +28,8 @@ const Index = () => {
   useEffect(() => {
     if (isRunning) {
       intervalRef.current = window.setInterval(() => {
-        setTime((prev) => prev + 10);
-      }, 10);
+        setTime((prev) => prev + 1);
+      }, 1);
     } else if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
@@ -43,12 +43,12 @@ const Index = () => {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    const milliseconds = Math.floor((ms % 1000) / 10);
+    const milliseconds = (ms % 1000);
     return `${hours.toString().padStart(2, "0")}:${minutes
       .toString()
       .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds
       .toString()
-      .padStart(2, "0")}`;
+      .padStart(3, "0")}`;
   };
 
   const handleStart = () => setIsRunning(true);
@@ -376,7 +376,7 @@ const Index = () => {
                         Точность (σ)
                       </div>
                       <div className="text-2xl font-bold text-foreground">
-                        ±0.01 с
+                        ±0.001 с
                       </div>
                     </div>
                   </div>
@@ -425,7 +425,7 @@ const Index = () => {
                           </span>
                         </div>
                         <div className="text-2xl font-['Roboto_Mono'] font-bold">
-                          100 Гц
+                          1000 Гц
                         </div>
                       </div>
                       <div className="p-4 bg-secondary/20 rounded border border-primary/10">
@@ -436,7 +436,7 @@ const Index = () => {
                           </span>
                         </div>
                         <div className="text-2xl font-['Roboto_Mono'] font-bold">
-                          10 мс
+                          1 мс
                         </div>
                       </div>
                     </div>
@@ -473,7 +473,7 @@ const Index = () => {
                           </p>
                           <p className="text-muted-foreground">
                             Хронометр калиброван по астрономическому времени.
-                            Точность измерений составляет ±10 миллисекунд.
+                            Точность измерений составляет ±1 миллисекунда.
                             Для повышения точности используйте коррекцию.
                           </p>
                         </div>
